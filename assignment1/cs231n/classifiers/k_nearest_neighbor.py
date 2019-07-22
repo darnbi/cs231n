@@ -76,8 +76,9 @@ class KNearestNeighbor(object):
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-                pass
+                
+                #using L2 distance(take the square root of squared (test image-training image))
+                dists[i,j] = np.sqrt(np.sum(np.square(X[i,:]- self.X_train[j,:])))
 
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -100,9 +101,9 @@ class KNearestNeighbor(object):
             # Do not use np.linalg.norm().                                        #
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
-
+        
+            dists[i,:] = np.sqrt(np.sum(np.square(self.X_train - X[i,:]), axis=1))
+            
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -131,8 +132,8 @@ class KNearestNeighbor(object):
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
-
+        dists = np.sqrt(np.sum(np.square(X), axis=1).reshape(-1,1) + np.sum(np.square(self.X_train), axis=1) - 2*np.dot(X,self.X_train.T))
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -163,8 +164,11 @@ class KNearestNeighbor(object):
             # Hint: Look up the function numpy.argsort.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+        
+            #sort the distances to find k numbers of the shortest distance image and return indices
+            closest_index = np.argsort(dists[i,:])[:k]
+            #find the closest image label based on index
+            closest_y_image = self.y_train[closest_index]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             #########################################################################
@@ -175,8 +179,11 @@ class KNearestNeighbor(object):
             # label.                                                                #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+            
+            #find most common label(by counting occurences of each value)
+            counts_each_label = np.bincount(closest_y_image, minlength = 5)
+            #find the label which is the most.
+            y_pred[i] = np.argmax(counts_each_label)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
