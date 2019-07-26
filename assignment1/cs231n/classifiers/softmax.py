@@ -24,6 +24,8 @@ def softmax_loss_naive(W, X, y, reg):
     # Initialize the loss and gradient to zero.
     loss = 0.0
     dW = np.zeros_like(W)
+    # numbers of train dataset 
+    num_train = X.shape[0]
 
     #############################################################################
     # TODO: Compute the softmax loss and its gradient using explicit loops.     #
@@ -32,8 +34,29 @@ def softmax_loss_naive(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    for i in range(num_train):
+        #get score class
+        scores = X[i,:].dot(W)
+        # softmax(get probabilities)
+        probabilities = np.exp(scores)/np.sum(np.exp(scores))
+        # get cross entrophy loss
+        loss -= np.log(probabilities[y[i]])
+        
+        gradient_q = probabilities.reshape(1,-1)
+        #
+        gradient_q[0, y[i]] += -1
+        
+        dW += X[i,:].reshape(-1,1).dot(gradient_q)
+       
+    #get mean loss
+    loss /= num_train
+    #regularization(mathemetically equivalent)
+    loss += reg*np.sum(W*W)
+    
+    #get mean gradient
+    dW /= num_train
+    #regularization
+    dW += 2*reg*W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -49,7 +72,8 @@ def softmax_loss_vectorized(W, X, y, reg):
     # Initialize the loss and gradient to zero.
     loss = 0.0
     dW = np.zeros_like(W)
-
+    num_train = X.shape[0]
+    
     #############################################################################
     # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
     # Store the loss in loss and the gradient in dW. If you are not careful     #
@@ -57,8 +81,27 @@ def softmax_loss_vectorized(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    
+    #get score class
+    scores = X.dot(W)
+    #get exponential fo scores
+    exp_scores = np.exp(scores)
+    #get probatilities of each scores
+    probabilities = exp_scores / np.sum(exp_scores, axis =1).reshape(-1,1)
+    
+    #get loss by cross entropy
+    loss -= np.sum(np.log(probabilities[range(num_train),y]))
+    
+    gradient_q = probabilities
+    gradient_q[range(num_train),y] += -1
+    dW = X.T.dot(gradient_q)
+    
+    loss /= num_train
+    loss += reg*np.sum(W*W)
+    
+    dW /= num_train
+    dW += 2*reg*W
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

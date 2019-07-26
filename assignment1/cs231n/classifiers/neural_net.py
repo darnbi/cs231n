@@ -80,7 +80,10 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #computing the class scores for the input X
+        a = np.maximum(0, np.dot(X,W1) + b1)
+        #stroe the result in score variable
+        scores = np.dot(a, W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +101,12 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #caculate exponential of scores for softmax
+        scores = np.exp(scores)
+        #get correct class score correspond to y
+        correct_class_score = scores[range(N), y].reshape(-1,1)
+        loss = -np.sum(np.log(correct_class_score/np.sum(scores, axis = 1).reshape(-1,1)))/N + reg*(np.sum(W1*W1)+np.sum(W2*W2))
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +119,14 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        dev = scores/np.sum(scores, axis=1).reshape(-1,1)
+        dev[range(N), y] -= 1
+        grads['W2'] = np.dot(a.T, dev)/N + 2*reg*W2
+        grads['b2'] = np.sum(dev, axis=0)/N
+        W2_opposite = np.dot(dev, W2.T)
+        W2_opposite_relu = W2_opposite*(a!=0)
+        grads['b1'] = np.sum(W2_opposite_relu, axis=0)/N
+        grads['W1'] = np.dot(X.T, W2_opposite_relu)/N + 2*reg*W1
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -147,8 +162,6 @@ class TwoLayerNet(object):
         val_acc_history = []
 
         for it in range(num_iters):
-            X_batch = None
-            y_batch = None
 
             #########################################################################
             # TODO: Create a random minibatch of training data and labels, storing  #
@@ -156,7 +169,11 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            #choose the batch size of random sampels in num_train numbers of data
+            choice = np.random.choice(num_train, batch_size)
+            X_batch = X[choice]
+            y_batch = y[choice]
+            
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +189,10 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.params['W1'] -= learning_rate*grads['W1']
+            self.params['W2'] -= learning_rate*grads['W2']
+            self.params['b1'] -= learning_rate*grads['b1']
+            self.params['b2'] -= learning_rate*grads['b2']
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -218,7 +238,7 @@ class TwoLayerNet(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        y_pred = np.argmax(self.loss(X), axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
