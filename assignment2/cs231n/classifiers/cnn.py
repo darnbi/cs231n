@@ -53,7 +53,37 @@ class ThreeLayerConvNet(object):
         # **the width and height of the input are preserved**. Take a look at      #
         # the start of the loss() function to see how that happens.                #                           
         ############################################################################
-        pass
+        
+        #input dimensions of channel, height, width
+        C,H,W = input_dim
+
+        #random weight
+        self.params["W1"] = np.random.normal(scale = weight_scale, size = (num_filters,C,filter_size, filter_size))
+        #number of b1 same as numer of filters
+        self.params["b1"] = np.zeros(num_filters)
+
+        #sizes after the convolutional operation(stride is taken as 1)
+        pad = (filter_size - 1) // 2
+        #height 
+        Hh = (H + 2 * pad - filter_size) + 1
+        #width
+        Ww = (W + 2 * pad - filter_size) + 1
+
+        #sizes after the pooling operation size(2x2 max pooling)
+        H1 = (Hh - 2) // 2 + 1 
+        W1 = (Ww - 2) // 2 + 1
+
+        #rescaled size of output
+        rescaled_size = num_filters * H1 * W1
+
+        #random Weight1
+        self.params["W2"] = np.random.normal(scale = weight_scale, size = (rescaled_size, hidden_dim))
+        self.params["b2"] = np.zeros(hidden_dim)
+        
+        #random Weight2
+        self.params["W3"] = np.random.normal(scale = weight_scale, size = (hidden_dim, num_classes))
+        self.params["b3"] = np.zeros(num_classes)
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -89,7 +119,14 @@ class ThreeLayerConvNet(object):
         # Remember you can use the functions defined in cs231n/fast_layers.py and  #
         # cs231n/layer_utils.py in your implementation (already imported).         #
         ############################################################################
-        pass
+        
+        #convolutional relu pooling forwarding
+        conv_output, conv_cache = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        #affine relu forwarding
+        afn_rl_output, affn_rl_cache = affine_relu_forward(conv_output, W2, b2)
+        #store to cache
+        scores, affine_cache = affine_forward(afn_rl_output, W3, b3)
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -108,7 +145,26 @@ class ThreeLayerConvNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        
+        #softmax loss (compute data loss)
+        loss, dout = softmax_loss(scores, y)
+        
+        #affine backwarding for layer3
+        dout, grads["W3"], grads["b3"] = affine_backward(dout, affine_cache)
+        #accumulate loss
+        loss += 0.5 * self.reg * np.sum(W3 * W3)
+        #W3 gradient
+        grads["W3"] += self.reg * W3
+
+        #affine backwarding for layer2
+        dout, grads["W2"], grads["b2"] = affine_relu_backward(dout, affn_rl_cache)
+        loss += 0.5 * self.reg * np.sum(W2 * W2)
+        grads["W2"] += self.reg * W2
+        
+        #affine backwarding for layer1
+        dout, grads["W1"], grads["b1"] = conv_relu_pool_backward(dout, conv_cache)
+        loss += 0.5 * self.reg * np.sum(W1 * W1)
+        grads["W1"] += self.reg * W1
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
