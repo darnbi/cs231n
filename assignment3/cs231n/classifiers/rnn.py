@@ -140,7 +140,32 @@ class CaptioningRNN(object):
         # Note also that you are allowed to make use of functions from layers.py   #
         # in your implementation, if needed.                                       #
         ############################################################################
-        pass
+        
+        h0, h0_cache = affine_forward(features, W_proj, b_proj)
+        
+        word_vectors, word_cache = word_embedding_forward(captions_in, W_embed)
+        #rnn
+        if (self.cell_type == "rnn"):
+            hidden_states, hidden_states_cache = rnn_forward(word_vectors, h0, Wx, Wh, b)
+        #lstm
+        elif (self.cell_type == "lstm"):
+            hidden_states, hidden_states_cache = lstm_forward(word_vectors, h0, Wx, Wh, b)
+
+        #scores
+        scores, affine_cache = temporal_affine_forward(hidden_states, W_vocab, b_vocab)
+
+        #loss
+        loss, dout = temporal_softmax_loss(scores, captions_out, mask)
+
+        #Back propagation methods
+
+        dout, grads["W_vocab"], grads["b_vocab"] = temporal_affine_backward(dout, affine_cache)
+        if (self.cell_type == "rnn"):
+            dout, dh0, grads["Wx"], grads["Wh"], grads["b"] = rnn_backward(dout, hidden_states_cache)
+        elif (self.cell_type == "lstm"):
+            dout, dh0, grads["Wx"], grads["Wh"], grads["b"] = lstm_backward(dout, hidden_states_cache)
+        grads["W_embed"] = word_embedding_backward(dout, word_cache)
+        _, grads["W_proj"], grads["b_proj"] = affine_backward(dh0, h0_cache)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -205,7 +230,29 @@ class CaptioningRNN(object):
         # NOTE: we are still working over minibatches in this function. Also if   #
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
-        pass
+        
+        #initial hidden state
+        h0, _ = affine_forward(features, W_proj, b_proj)
+        words = self._start * np.ones(N, dtype = int)
+        #LSTM
+        if self.cell_type == "lstm":
+            c0 = np.zeros_like(h0)
+
+        for step in range(max_length):
+            words,_ = word_embedding_forward(words, W_embed)
+            #RNN
+            if self.cell_type == "rnn":
+                h0,_ = rnn_step_forward(words, h0, Wx, Wh, b)
+            #LSTM
+            elif self.cell_type == "lstm":
+                h0, c0, _ = lstm_step_forward(words, h0, c0, Wx, Wh, b)
+
+            scores, _ = affine_forward(h0, W_vocab, b_vocab)
+            #Select the highest score as the next word
+            words = np.argmax(scores, axis = 1)
+            #writing it to the appropriate slot
+            captions[:,step] = words
+            
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
